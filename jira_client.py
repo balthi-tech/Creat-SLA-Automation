@@ -19,31 +19,31 @@ def _jira_search(jql, fields, env):
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
     issues = []
-    start_at = 0
-    max_results = 50
+    next_page_token = None
 
     while True:
+        body = {"jql": jql, "fields": fields, "maxResults": 100}
+        if next_page_token:
+            body["nextPageToken"] = next_page_token
+
         resp = requests.post(
             f"{base_url}/rest/api/3/search/jql",
             auth=auth,
             headers=headers,
-            json={
-                "jql": jql,
-                "fields": fields,
-                "startAt": start_at,
-                "maxResults": max_results,
-            },
+            json=body,
             timeout=30,
         )
         if resp.status_code == 401:
             print("[ERROR] Authentification Jira échouée — vérifiez JIRA_EMAIL et JIRA_API_TOKEN", file=sys.stderr)
             sys.exit(1)
+        if not resp.ok:
+            print(f"[ERROR] Jira API {resp.status_code}: {resp.text}", file=sys.stderr)
         resp.raise_for_status()
         data = resp.json()
         issues.extend(data["issues"])
-        if start_at + max_results >= data["total"]:
+        next_page_token = data.get("nextPageToken")
+        if not next_page_token:
             break
-        start_at += max_results
 
     return issues
 
