@@ -16,20 +16,20 @@ def get_env_required(*names):
 def _jira_search(jql, fields, env):
     base_url = env["JIRA_BASE_URL"]
     auth = HTTPBasicAuth(env["JIRA_EMAIL"], env["JIRA_API_TOKEN"])
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
     issues = []
     start_at = 0
     max_results = 50
 
     while True:
-        resp = requests.get(
-            f"{base_url}/rest/api/3/search",
+        resp = requests.post(
+            f"{base_url}/rest/api/3/search/jql",
             auth=auth,
             headers=headers,
-            params={
+            json={
                 "jql": jql,
-                "fields": ",".join(fields),
+                "fields": fields,
                 "startAt": start_at,
                 "maxResults": max_results,
             },
